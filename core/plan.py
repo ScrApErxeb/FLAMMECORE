@@ -9,21 +9,17 @@ class ActionStatus(Enum):
     SKIPPED = "SKIPPED"
 
 class Action:
-    def __init__(
-        self,
-        id: str,
-        execute: Callable[[], None],
-        dependencies: Optional[List[str]] = None,
-        condition: Optional[Callable[[], bool]] = None,
-        wait_for_signals: Optional[Set[str]] = None,
-    ):
+    def __init__(self, id: str, func, params=None, max_retries=3, timeout=5,
+                 dependencies: Optional[List[str]] = None, condition: Optional[Callable] = None):
         self.id = id
-        self.execute = execute
+        self.func = func
+        self.params = params or {}
+        self.max_retries = max_retries
+        self.timeout = timeout
         self.dependencies = dependencies or []
-        self.condition = condition  # Fonction retournant bool
-        self.wait_for_signals = wait_for_signals or set()  # IDs de signaux attendus
-        self.status = ActionStatus.PENDING
-        self.received_signals = set()
+        self.status = "PENDING"
+        self.retry_count = 0
+        self.condition = condition
 
     def can_execute(self, plan_actions: Dict[str, "Action"]) -> bool:
         # 1. Toutes les dépendances sont DONE
