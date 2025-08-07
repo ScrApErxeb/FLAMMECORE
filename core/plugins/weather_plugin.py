@@ -1,11 +1,11 @@
-# core/plugins/weather_plugin.py
 from core.signal import Signal, SignalType, Action
 import requests
 
 class Plugin:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, timeout: int = 5):
         self.name = "weather"
         self.api_key = api_key
+        self.timeout = timeout
 
     def handle_signal(self, signal: Signal):
         location = signal.payload.get("location", "")
@@ -14,7 +14,7 @@ class Plugin:
         
         url = f"http://api.openweathermap.org/data/2.5/weather?q={location}&appid={self.api_key}&units=metric&lang=fr"
         try:
-            resp = requests.get(url)
+            resp = requests.get(url, timeout=self.timeout)
             if resp.status_code == 200:
                 data = resp.json()
                 weather = data["weather"][0]["description"]
@@ -23,5 +23,7 @@ class Plugin:
                 return Action(id="action_weather_1", params={"weather": report})
             else:
                 return Action(id="action_weather_1", params={"weather": "Ville introuvable."})
+        except requests.Timeout:
+            return Action(id="action_weather_1", params={"weather": "Erreur : délai d'attente dépassé."})
         except Exception as e:
             return Action(id="action_weather_1", params={"weather": f"Erreur API météo: {str(e)}"})

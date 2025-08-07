@@ -1,5 +1,11 @@
-# core/plugin_manager.py
+# core/plugin_manager.py (début de fichier)
+from core.logging_utils import get_logger
+logger = get_logger("PluginManager")
+
+import time
+
 import importlib
+import traceback
 from typing import Optional
 from core.signal import Signal, Action
 from core.balancer import Balancer  # si tu as un système de routage, sinon à supprimer
@@ -32,11 +38,11 @@ class PluginManager:
 
             plugin_instance = plugin_class(**init_args)
             self.register_plugin(plugin_instance)
-            print(f"[PluginManager] Plugin '{plugin_instance.name}' chargé.")
+            logger.info(f"[PluginManager] Plugin '{plugin_instance.name}' chargé.")
             return plugin_instance.name
 
         except Exception as e:
-            print(f"[PluginManager] Erreur chargement plugin {module_path}: {e}")
+            logger.info(f"[PluginManager] Erreur chargement plugin {module_path}: {e}")
             return None
 
     def register_plugin(self, plugin_instance):
@@ -54,12 +60,12 @@ class PluginManager:
 
     def handle_signal(self, signal: Signal) -> Optional[Action]:
         """
-        Route un signal vers le plugin adéquat
+        Route un signal vers le plugin adéquat, avec gestion avancée des erreurs
         """
         plugin_name = signal.payload.get("plugin_name")
         if not plugin_name:
-            print("[PluginManager] Signal sans plugin_name")
-            return None
+            logger.info("[PluginManager] Signal sans plugin_name")
+            return Action(id="plugin_error", params={"error": "Nom du plugin manquant dans le signal."})
 
         # Utilise le balancer pour décider où router (local ou cloud)
         route = self.balancer.route(plugin_name)
@@ -67,23 +73,41 @@ class PluginManager:
         if route == "local" and plugin_name in self.plugins:
             plugin = self.plugins[plugin_name]
 
-            try:
-                if "handle_signal" in self.allowed_methods and hasattr(plugin, "handle_signal"):
-                    return plugin.handle_signal(signal)
-                else:
-                    print(f"[PluginManager] Méthode handle_signal non autorisée pour plugin '{plugin_name}'")
-                    return None
-            except Exception as e:
-                print(f"[PluginManager] Erreur dans plugin '{plugin_name}': {e}")
-                return None
+            if "handle_signal" in self.allowed_methods and hasattr(plugin, "handle_signal"):
+                return self.safe_handle_signal(plugin, signal)
+            else:
+                logger.info(f"[PluginManager] Méthode handle_signal non autorisée pour plugin '{plugin_name}'")
+                return Action(id="plugin_error", params={"error": f"Méthode non autorisée pour '{plugin_name}'"})
 
         elif route == "cloud":
-            # Si t'as une API cloud, gère ici, sinon renvoie None ou simule
             return self.call_cloud_api(signal)
 
         else:
-            print(f"[PluginManager] Plugin '{plugin_name}' non trouvé ou route inconnue")
-            return None
+            logger.info(f"[PluginManager] Plugin '{plugin_name}' non trouvé ou route inconnue")
+            return Action(id="plugin_error", params={"error": f"Plugin '{plugin_name}' non disponible"})
+
+    def safe_handle_signal(self, plugin, signal: Signal, retries=3, retry_delay=1) -> Action:
+        """
+        Enveloppe la méthode handle_signal d’un plugin avec gestion d’erreurs, retries et retour propre
+        """
+        for attempt in range(1, retries + 1):
+            try:
+                result = plugin.handle_signal(signal)
+                if result is None:
+                    raise ValueError(f"Plugin '{plugin.name}' n'a rien retourné.")
+                return result
+            except Exception as e:
+                error_msg = f"Erreur dans plugin '{plugin.name}', tentative {attempt} : {str(e)}"
+                logger.error(error_msg)
+                if attempt < retries:
+                    time.sleep(retry_delay)
+                else:
+                    logger.error(f"[PluginManager] Échec après {retries} tentatives.")
+                    return Action(id="plugin_error", params={
+                        "error": error_msg,
+                        "plugin": plugin.name,
+                        "retries": retries
+                    })
 
     def call_cloud_api(self, signal: Signal) -> Optional[Action]:
         # Simulation d’appel cloud (à remplacer par un vrai appel)

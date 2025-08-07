@@ -2,9 +2,11 @@ from datetime import datetime, timezone
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+from core.signal import Signal, SignalType
 
 class ActionExecutor:
-    def __init__(self, max_workers=4):
+    def __init__(self,plugin_manager, max_workers=4):
+        self.plugin_manager = plugin_manager
         self.results = []
         self.before_hooks = []
         self.after_hooks = []
@@ -68,14 +70,18 @@ class ActionExecutor:
         return result_entry
 
     def _execute_action(self, action: dict):
-        if action["type"] == "echo":
-            return action.get("message", "")
-        elif action["type"] == "add":
-            return action["a"] + action["b"]
-        else:
-            raise ValueError(f"Action inconnue: {action['type']}")
+        signal_payload = dict(action)
+        signal_payload["plugin_name"] = action.get("type")
+        signal = Signal(type=SignalType.CUSTOM, payload=signal_payload)
 
-    def export_logs(self, filepath: str):
-        """Export des logs d'exécution au format JSON"""
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(self.results, f, ensure_ascii=False, indent=2)
+        plugin_action = self.plugin_manager.handle_signal(signal)
+        if plugin_action is None:
+            raise ValueError(f"Action inconnue ou plugin indisponible: {action.get('type')}")
+
+        # Si le plugin renvoie une liste (comme le planner)
+        if isinstance(plugin_action, list):
+            # On retourne une liste des params de chaque action
+            return [act.params for act in plugin_action]
+
+        # Sinon, on retourne simplement les params de l'action unique
+        return plugin_action.params

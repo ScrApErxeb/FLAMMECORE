@@ -1,10 +1,10 @@
-# core/plugins/wiki_plugin.py
 from core.signal import Signal, SignalType, Action
 import requests
 
 class WikiPlugin:
-    def __init__(self):
+    def __init__(self, timeout: int = 5):
         self.name = "wiki"
+        self.timeout = timeout
 
     def handle_signal(self, signal: Signal):
         query = signal.payload.get("query", "")
@@ -13,12 +13,14 @@ class WikiPlugin:
 
         url = f"https://fr.wikipedia.org/api/rest_v1/page/summary/{query.replace(' ', '_')}"
         try:
-            resp = requests.get(url)
+            resp = requests.get(url, timeout=self.timeout)
             if resp.status_code == 200:
                 data = resp.json()
                 summary = data.get("extract", "Pas de résumé disponible.")
                 return Action(id="action_wiki_1", params={"summary": summary})
             else:
                 return Action(id="action_wiki_1", params={"summary": "Article introuvable."})
+        except requests.Timeout:
+            return Action(id="action_wiki_1", params={"summary": "Erreur : délai d'attente dépassé."})
         except Exception as e:
             return Action(id="action_wiki_1", params={"summary": f"Erreur API Wiki: {str(e)}"})

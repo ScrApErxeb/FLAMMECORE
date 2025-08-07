@@ -1,0 +1,76 @@
+{
+    "Gomde": {
+        "id": "UUID",
+        "type": "string",
+        "content": "mixed",
+        "timestamp": "datetime",
+        "source": "string"
+    },
+    "Porte": {
+        "id": "UUID",
+        "gomde_id": "UUID",
+        "encoding": "array<float> / dict",
+        "format": "string",
+        "meta": "dict"
+    },
+    "R\u00e9ponse": {
+        "id": "UUID",
+        "porte_id": "UUID",
+        "content": "string / dict",
+        "mode": "string",
+        "timestamp": "datetime",
+        "confidence": "float",
+        "source": "string"
+    },
+    "M\u00e9moire": {
+        "id": "UUID",
+        "vector": "array<float>",
+        "response_id": "UUID",
+        "tags": "list<string>",
+        "importance": "int",
+        "timestamp": "datetime"
+    },
+    "Plugin": {
+        "id": "UUID",
+        "name": "string",
+        "description": "string",
+        "inputs": "list<string>",
+        "outputs": "list<string>",
+        "language": "string",
+        "path": "string",
+        "active": "bool"
+    },
+    "BalancerDecision": {
+        "id": "UUID",
+        "porte_id": "UUID",
+        "target": "string",
+        "reasoning": "string",
+        "timestamp": "datetime"
+    },
+    "Action": {
+        "id": "UUID",
+        "gomde_id": "UUID",
+        "response_id": "UUID",
+        "plugin_used": "string (nullable)",
+        "timestamp": "datetime",
+        "notes": "string"
+    },
+    "Signal": {
+        "id": "UUID",
+        "source": "string",
+        "target": "string",
+        "action": "string",
+        "payload": "dict",
+        "response": "dict / string",
+        "status": "string",
+        "timestamp": "datetime"
+    },
+    "TraceLog": {
+        "id": "UUID",
+        "event_type": "string",
+        "event_id": "UUID",
+        "summary": "string",
+        "timestamp": "datetime",
+        "user_visible": "bool"
+    }
+}

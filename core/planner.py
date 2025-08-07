@@ -1,15 +1,15 @@
-from core.signal import Signal, SignalType, Action
-from core.plan import Plan
+# core/planner.py
+from typing import List, Optional
+from core.signal import Signal, SignalType
+from core.action import Action
 
 class Planner:
     def __init__(self):
         pass
 
-    def plan_actions(self, signal: Signal) -> Plan:
-        if signal.type == SignalType.PLUGIN_CALL:
-            # Exemple basique : créer un plan avec une seule action
-            action = Action(target="plugin_manager", params=signal.payload)
-            return Plan(actions=[action])
-        else:
-            # Si le signal n’est pas gérable, retourner un plan vide
-            return Plan(actions=[])
+    def plan(self, signal: Signal) -> Optional[Action]:
+        if signal.type != SignalType.PLANNING_REQUEST:
+            return None
+
+        # TODO: logiques plus complexes à venir ici
+        return Action(id="plan_action_1", params={"info": "Planificateur activé pour: " + str(signal.payload)})

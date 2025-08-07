@@ -1,9 +1,9 @@
-from core.signal import Signal, Action
+from core.signal import Signal, SignalType, Action
 
 class Plugin:
     def __init__(self):
         self.name = "echo"
 
     def handle_signal(self, signal: Signal):
-        msg = signal.payload.get("message", "")
-        return Action(id="echo", params={"echo": msg})
+        text = signal.payload.get("text", "")
+        return Action(id="echo_action", params={"response": text})

@@ -1,25 +1,57 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
-.env
-.venv
-env/
+*.env
+.env.*
 venv/
+env/
+.venv/
+.Python
+*.sqlite3
+*.log
+*.pot
+*.mo
 
-# Test files
-pytest_cache/
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+out/
+
+# Vite (ou autres bundlers)
+.vite/
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Logs
 *.log
 
-# VSCode / IDE
-.vscode/
+# Coverage reports
+coverage/
+*.lcov
+
+# Env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# JetBrains IDEs
 .idea/
 
-# Data
-data/
-*.json
+# VSCode
+.vscode/
 
-# OS
-.DS_Store
-Thumbs.db
+# Other
+*.swp
+*.swo
