@@ -1,11 +1,19 @@
 from fastapi import FastAPI
+from fastapi import APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Dict, Any
-from fastapi import Response
+from core.plugin_manager import PluginManager
+from api.memoire_api import router as memoire_router
+
 from core.executor import ActionExecutor  # à adapter selon ton import réel
 
 app = FastAPI(title="FlammeCore API")
+
+router = APIRouter()
+plugin_manager = PluginManager()
+executor = ActionExecutor(plugin_manager)
+
 
 origins = ["http://localhost","http://localhost:5173", "http://localhost:3000"]
 
@@ -16,7 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-executor = ActionExecutor()
 
 class Action(BaseModel):
     type: str
@@ -34,3 +41,9 @@ class ExecuteRequest(BaseModel):
 async def execute_actions(req: ExecuteRequest):
     results = executor.execute(req.actions)
     return {"results": results}
+
+@router.get("/plugins")
+def list_plugins():
+    return {"plugins": list(plugin_manager.plugins.keys())}
+
+app.include_router(memoire_router, prefix="/memoire", tags=["memoire"])

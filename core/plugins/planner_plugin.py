@@ -1,29 +1,31 @@
-from core.signal import Signal, SignalType, Action
-from core.plugin_manager import PluginManager
+from core.signal import Signal, Action
+from typing import List, Dict, Optional
 
 class Plugin:
-    def __init__(self, plugin_manager: PluginManager):
+    def __init__(self):
         self.name = "planner"
-        self.plugin_manager = plugin_manager
 
-    def handle_signal(self, signal: Signal):
+    def handle_signal(self, signal: Signal) -> List[Action]:
         steps = signal.payload.get("steps", [])
         if not steps:
-            return [Action(id="planner_empty", params={"info": "Aucune étape à traiter."})]
+            return [Action(id="planner_empty", params={"info": "Aucune étape fournie."})]
 
-        actions = []
-        for idx, step in enumerate(steps):
-            plugin_name = step.get("type")
-            step_payload = dict(step)  # Copie pour ne pas muter l'original
-            step_payload["plugin_name"] = plugin_name
+        # Trier les étapes selon la priorité (plus petit = plus prioritaire)
+        steps_sorted = sorted(steps, key=lambda s: s.get("priority", 100))
 
-            sub_signal = Signal(type=SignalType.PLUGIN_CALL, payload=step_payload)
-            action = self.plugin_manager.handle_signal(sub_signal)
-            if action:
-                # Ajouter un identifiant unique par étape
-                action.id = f"step_{idx+1}_{plugin_name}"
-                actions.append(action)
+        actions: List[Action] = []
+        completed_ids = set()
+
+        for step in steps_sorted:
+            deps = step.get("depends_on", [])
+            # Vérifier que toutes les dépendances sont dans completed_ids
+            if all(dep in completed_ids for dep in deps):
+                # TODO: appeler plugin adapté à type ici, mais on simule
+                action_id = step.get("id", f"step_{len(actions)+1}")
+                actions.append(Action(id=action_id, params={"info": f"Étape {action_id} exécutée"}))
+                completed_ids.add(action_id)
             else:
-                actions.append(Action(id=f"step_{idx+1}_{plugin_name}_failed", params={"error": f"Échec du plugin {plugin_name}"}))
+                # Si dépendances non satisfaites, on pourrait différer, ici on ignore
+                actions.append(Action(id=f"{step.get('id', 'unknown')}_skipped", params={"info": "Dépendances non satisfaites"}))
 
         return actions

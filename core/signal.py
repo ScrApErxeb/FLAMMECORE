@@ -16,9 +16,11 @@ class ActionStatus(Enum):
 
 @dataclass
 class Signal:
+    name: str
+    payload: dict
+    context: dict = field(default_factory=dict)
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     type: SignalType = SignalType.USER_INPUT
-    payload: dict = field(default_factory=dict)
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 @dataclass
